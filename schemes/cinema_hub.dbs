@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="PostgreSQL" database="PostgreSQL" id="PostgreSQL-2f3" >
+	<schema name="public" >
+		<comment><![CDATA[standard public schema]]></comment>
+		<table name="actor" spec="" >
+			<comment><![CDATA[Данные об актёрах]]></comment>
+			<column name="actor_id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор актёра]]></comment>
+			</column>
+			<column name="first_name" type="varchar" length="100" jt="12" >
+				<comment><![CDATA[Имя актёра]]></comment>
+			</column>
+			<column name="last_name" type="varchar" length="100" jt="12" >
+				<comment><![CDATA[Фамилия актёра]]></comment>
+			</column>
+			<column name="birth_date" type="date" length="0" jt="91" >
+				<comment><![CDATA[Дата рождения актёра]]></comment>
+			</column>
+			<column name="nationality" type="varchar" length="100" jt="12" >
+				<comment><![CDATA[Национальность актёра]]></comment>
+			</column>
+			<index name="actor_pkey" unique="PRIMARY_KEY" >
+				<column name="actor_id" />
+			</index>
+		</table>
+		<table name="customer" spec="" >
+			<comment><![CDATA[Данные о клиентах]]></comment>
+			<column name="customer_id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор клиента]]></comment>
+			</column>
+			<column name="first_name" type="varchar" length="100" jt="12" >
+				<comment><![CDATA[Имя клиента]]></comment>
+			</column>
+			<column name="last_name" type="varchar" length="100" jt="12" >
+				<comment><![CDATA[Фамилия клиента]]></comment>
+			</column>
+			<column name="email" type="varchar" length="255" jt="12" >
+				<comment><![CDATA[Электронная почта клиента]]></comment>
+			</column>
+			<column name="phone_number" type="varchar" length="20" jt="12" >
+				<comment><![CDATA[Номер телефона клиента]]></comment>
+			</column>
+			<column name="address" type="varchar" length="255" jt="12" >
+				<comment><![CDATA[Адрес проживания клиента]]></comment>
+			</column>
+			<column name="registration_date" type="date" length="0" jt="91" >
+				<comment><![CDATA[Дата регистрации клиента]]></comment>
+			</column>
+			<column name="preferences" type="jsonb" jt="2000" >
+				<comment><![CDATA[Предпочтения клиента]]></comment>
+			</column>
+			<index name="customer_pkey" unique="PRIMARY_KEY" >
+				<column name="customer_id" />
+			</index>
+		</table>
+		<table name="movie" spec="" >
+			<comment><![CDATA[Информация о фильмах]]></comment>
+			<column name="movie_id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор фильма]]></comment>
+			</column>
+			<column name="title" type="varchar" length="255" jt="12" mandatory="y" >
+				<comment><![CDATA[Название фильма]]></comment>
+			</column>
+			<column name="release_year" type="integer" length="32" jt="4" >
+				<comment><![CDATA[Год выхода фильма]]></comment>
+			</column>
+			<column name="genre" type="varchar" length="100" jt="12" >
+				<comment><![CDATA[Жанр фильма]]></comment>
+			</column>
+			<column name="rating" type="numeric" length="2" decimal="1" jt="2" >
+				<comment><![CDATA[Рейтинг фильма]]></comment>
+			</column>
+			<column name="duration" type="integer" length="32" jt="4" >
+				<comment><![CDATA[Продолжительность фильма в минутах]]></comment>
+			</column>
+			<column name="description" type="text" jt="12" >
+				<comment><![CDATA[Краткое описание фильма]]></comment>
+			</column>
+			<column name="additional_info" type="jsonb" jt="2000" >
+				<comment><![CDATA[Дополнительная информация о фильме.]]></comment>
+			</column>
+			<index name="movie_pkey" unique="PRIMARY_KEY" >
+				<column name="movie_id" />
+			</index>
+		</table>
+		<table name="movie_actor" spec="" >
+			<comment><![CDATA[Связь фильмов и актёров]]></comment>
+			<column name="movie_actor_id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор записи]]></comment>
+			</column>
+			<column name="movie_id" type="integer" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Ссылка на фильм]]></comment>
+			</column>
+			<column name="actor_id" type="integer" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Ссылка на актёра]]></comment>
+			</column>
+			<index name="movie_actor_pkey" unique="PRIMARY_KEY" >
+				<column name="movie_actor_id" />
+			</index>
+			<fk name="movie_actor_movie_id_fkey" to_schema="public" to_table="movie" >
+				<fk_column name="movie_id" pk="movie_id" />
+			</fk>
+			<fk name="movie_actor_actor_id_fkey" to_schema="public" to_table="actor" >
+				<fk_column name="actor_id" pk="actor_id" />
+			</fk>
+		</table>
+		<table name="rental" spec="" >
+			<comment><![CDATA[Информация об аренде фильмов]]></comment>
+			<column name="rental_id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор аренды]]></comment>
+			</column>
+			<column name="customer_id" type="integer" length="32" jt="4" >
+				<comment><![CDATA[Ссылка на клиента, который арендует фильм]]></comment>
+			</column>
+			<column name="movie_id" type="integer" length="32" jt="4" >
+				<comment><![CDATA[Ссылка на арендованный фильм]]></comment>
+			</column>
+			<column name="rental_date" type="date" length="0" jt="91" >
+				<comment><![CDATA[Дата аренды]]></comment>
+			</column>
+			<column name="return_date" type="date" length="0" jt="91" >
+				<comment><![CDATA[Дата возврата]]></comment>
+			</column>
+			<index name="rental_pkey" unique="PRIMARY_KEY" >
+				<column name="rental_id" />
+			</index>
+			<fk name="rental_customer_id_fkey" to_schema="public" to_table="customer" >
+				<fk_column name="customer_id" pk="customer_id" />
+			</fk>
+			<fk name="rental_movie_id_fkey" to_schema="public" to_table="movie" >
+				<fk_column name="movie_id" pk="movie_id" />
+			</fk>
+		</table>
+		<sequence name="actor_actor_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+		<sequence name="customer_customer_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+		<sequence name="movie_actor_movie_actor_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+		<sequence name="movie_movie_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+		<sequence name="rental_rental_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+	</schema>
+	<layout name="Main Layout" id="Layout-23e7" show_relation="columns" >
+		<comment><![CDATA[cinema_hub]]></comment>
+		<entity schema="public" name="actor" color="BED3F4" x="64" y="48" />
+		<entity schema="public" name="customer" color="BED3F4" x="48" y="272" />
+		<entity schema="public" name="movie" color="BED3F4" x="528" y="128" />
+		<entity schema="public" name="movie_actor" color="3986C1" x="288" y="64" />
+		<entity schema="public" name="rental" color="BED3F4" x="304" y="256" />
+		<script name="SQL_Editor" id="Editor-e3a" language="SQL" >
+			<string><![CDATA[
+create table movie_actor (
+	movie_actor_id serial primary key,
+    movie_id int references movie(movie_id) not null,
+    actor_id int references actor(actor_id) not null
+);
+]]></string>
+		</script>
+		<script name="SQL_Editor_001" id="Editor-20f0" language="SQL" >
+			<string><![CDATA[CREATE SCHEMA IF NOT EXISTS "public";
+
+CREATE SEQUENCE "public".actor_actor_id_seq AS integer START WITH 1 INCREMENT BY 1;
+
+CREATE SEQUENCE "public".customer_customer_id_seq AS integer START WITH 1 INCREMENT BY 1;
+
+CREATE SEQUENCE "public".movie_actor_movie_actor_id_seq AS integer START WITH 1 INCREMENT BY 1;
+
+CREATE SEQUENCE "public".movie_movie_id_seq AS integer START WITH 1 INCREMENT BY 1;
+
+CREATE SEQUENCE "public".rental_rental_id_seq AS integer START WITH 1 INCREMENT BY 1;
+
+CREATE  TABLE "public".actor ( 
+	actor_id             serial  NOT NULL  ,
+	first_name           varchar(100)    ,
+	last_name            varchar(100)    ,
+	birth_date           date    ,
+	nationality          varchar(100)    ,
+	CONSTRAINT actor_pkey PRIMARY KEY ( actor_id )
+ );
+
+CREATE  TABLE "public".customer ( 
+	customer_id          serial  NOT NULL  ,
+	first_name           varchar(100)    ,
+	last_name            varchar(100)    ,
+	email                varchar(255)    ,
+	phone_number         varchar(20)    ,
+	address              varchar(255)    ,
+	registration_date    date    ,
+	preferences          jsonb    ,
+	CONSTRAINT customer_pkey PRIMARY KEY ( customer_id )
+ );
+
+CREATE  TABLE "public".movie ( 
+	movie_id             serial  NOT NULL  ,
+	title                varchar(255)  NOT NULL  ,
+	release_year         integer    ,
+	genre                varchar(100)    ,
+	rating               numeric(2,1)    ,
+	duration             integer    ,
+	description          text    ,
+	additional_info      jsonb    ,
+	CONSTRAINT movie_pkey PRIMARY KEY ( movie_id )
+ );
+
+CREATE  TABLE "public".movie_actor ( 
+	movie_actor_id       serial  NOT NULL  ,
+	movie_id             integer  NOT NULL  ,
+	actor_id             integer  NOT NULL  ,
+	CONSTRAINT movie_actor_pkey PRIMARY KEY ( movie_actor_id )
+ );
+
+CREATE  TABLE "public".rental ( 
+	rental_id            serial  NOT NULL  ,
+	customer_id          integer    ,
+	movie_id             integer    ,
+	rental_date          date    ,
+	return_date          date    ,
+	CONSTRAINT rental_pkey PRIMARY KEY ( rental_id )
+ );
+
+ALTER TABLE "public".movie_actor ADD CONSTRAINT movie_actor_movie_id_fkey FOREIGN KEY ( movie_id ) REFERENCES "public".movie( movie_id );
+
+ALTER TABLE "public".movie_actor ADD CONSTRAINT movie_actor_actor_id_fkey FOREIGN KEY ( actor_id ) REFERENCES "public".actor( actor_id );
+
+ALTER TABLE "public".rental ADD CONSTRAINT rental_customer_id_fkey FOREIGN KEY ( customer_id ) REFERENCES "public".customer( customer_id );
+
+ALTER TABLE "public".rental ADD CONSTRAINT rental_movie_id_fkey FOREIGN KEY ( movie_id ) REFERENCES "public".movie( movie_id );
+
+COMMENT ON TABLE "public".actor IS 'Данные об актёрах';
+
+COMMENT ON COLUMN "public".actor.actor_id IS 'Уникальный идентификатор актёра';
+
+COMMENT ON COLUMN "public".actor.first_name IS 'Имя актёра';
+
+COMMENT ON COLUMN "public".actor.last_name IS 'Фамилия актёра';
+
+COMMENT ON COLUMN "public".actor.birth_date IS 'Дата рождения актёра';
+
+COMMENT ON COLUMN "public".actor.nationality IS 'Национальность актёра';
+
+COMMENT ON TABLE "public".customer IS 'Данные о клиентах';
+
+COMMENT ON COLUMN "public".customer.customer_id IS 'Уникальный идентификатор клиента';
+
+COMMENT ON COLUMN "public".customer.first_name IS 'Имя клиента';
+
+COMMENT ON COLUMN "public".customer.last_name IS 'Фамилия клиента';
+
+COMMENT ON COLUMN "public".customer.email IS 'Электронная почта клиента';
+
+COMMENT ON COLUMN "public".customer.phone_number IS 'Номер телефона клиента';
+
+COMMENT ON COLUMN "public".customer.address IS 'Адрес проживания клиента';
+
+COMMENT ON COLUMN "public".customer.registration_date IS 'Дата регистрации клиента';
+
+COMMENT ON COLUMN "public".customer.preferences IS 'Предпочтения клиента';
+
+COMMENT ON TABLE "public".movie IS 'Информация о фильмах';
+
+COMMENT ON COLUMN "public".movie.movie_id IS 'Уникальный идентификатор фильма';
+
+COMMENT ON COLUMN "public".movie.title IS 'Название фильма';
+
+COMMENT ON COLUMN "public".movie.release_year IS 'Год выхода фильма';
+
+COMMENT ON COLUMN "public".movie.genre IS 'Жанр фильма';
+
+COMMENT ON COLUMN "public".movie.rating IS 'Рейтинг фильма';
+
+COMMENT ON COLUMN "public".movie.duration IS 'Продолжительность фильма в минутах';
+
+COMMENT ON COLUMN "public".movie.description IS 'Краткое описание фильма';
+
+COMMENT ON COLUMN "public".movie.additional_info IS 'Дополнительная информация о фильме.';
+
+COMMENT ON TABLE "public".movie_actor IS 'Связь фильмов и актёров';
+
+COMMENT ON COLUMN "public".movie_actor.movie_actor_id IS 'Уникальный идентификатор записи';
+
+COMMENT ON COLUMN "public".movie_actor.movie_id IS 'Ссылка на фильм';
+
+COMMENT ON COLUMN "public".movie_actor.actor_id IS 'Ссылка на актёра';
+
+COMMENT ON TABLE "public".rental IS 'Информация об аренде фильмов';
+
+COMMENT ON COLUMN "public".rental.rental_id IS 'Уникальный идентификатор аренды';
+
+COMMENT ON COLUMN "public".rental.customer_id IS 'Ссылка на клиента, который арендует фильм';
+
+COMMENT ON COLUMN "public".rental.movie_id IS 'Ссылка на арендованный фильм';
+
+COMMENT ON COLUMN "public".rental.rental_date IS 'Дата аренды';
+
+COMMENT ON COLUMN "public".rental.return_date IS 'Дата возврата';
+]]></string>
+		</script>
+	</layout>
+</project>
