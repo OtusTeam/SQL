@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="PostgreSQL" database="PostgreSQL" id="PostgreSQL-aff" >
+	<schema name="public" >
+		<comment><![CDATA[standard public schema]]></comment>
+		<table name="landmarks" row_count="0" spec="" >
+			<comment><![CDATA[Достопримечательность]]></comment>
+			<column name="id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор достопримечательности]]></comment>
+			</column>
+			<column name="name" type="varchar" length="255" jt="12" mandatory="y" >
+				<comment><![CDATA[Название достопримечательности]]></comment>
+			</column>
+			<column name="location" type="varchar" jt="12" mandatory="y" >
+				<comment><![CDATA[Географическое положение достопримечательности (точка, система координат WGS 84)]]></comment>
+			</column>
+			<column name="boundary" type="varchar" jt="12" >
+				<comment><![CDATA[Границы достопримечательности (полигон, система координат WGS 84)]]></comment>
+			</column>
+			<index name="landmarks_pkey" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+		</table>
+		<table name="routes" row_count="0" spec="" >
+			<comment><![CDATA[Маршрут]]></comment>
+			<column name="id" type="serial" length="32" jt="4" mandatory="y" >
+				<comment><![CDATA[Уникальный идентификатор маршрута]]></comment>
+			</column>
+			<column name="start_location" type="varchar" jt="12" mandatory="y" >
+				<comment><![CDATA[Начальная точка маршрута (система координат WGS 84)]]></comment>
+			</column>
+			<column name="end_location" type="varchar" jt="12" mandatory="y" >
+				<comment><![CDATA[Конечная точка маршрута (система координат WGS 84)]]></comment>
+			</column>
+			<column name="route" type="varchar" jt="12" mandatory="y" >
+				<comment><![CDATA[Линия маршрута между начальной и конечной точками (система координат WGS 84)]]></comment>
+			</column>
+			<index name="routes_pkey" unique="PRIMARY_KEY" >
+				<column name="id" />
+			</index>
+		</table>
+		<table name="spatial_ref_sys" row_count="8500" spec="" >
+			<column name="srid" type="integer" length="32" jt="4" mandatory="y" />
+			<column name="auth_name" type="varchar" length="256" jt="12" />
+			<column name="auth_srid" type="integer" length="32" jt="4" />
+			<column name="srtext" type="varchar" length="2048" jt="12" />
+			<column name="proj4text" type="varchar" length="2048" jt="12" />
+			<index name="spatial_ref_sys_pkey" unique="PRIMARY_KEY" >
+				<column name="srid" />
+			</index>
+			<constraint name="spatial_ref_sys_srid_check" type="CHECK" options="" >
+				<string><![CDATA[((srid > 0) AND (srid <= 998999))]]></string>
+			</constraint>
+		</table>
+		<view name="geography_columns" >
+			<view_script><![CDATA[CREATE VIEW ${nameWithSchemaName} AS SELECT current_database() AS f_table_catalog,
+    n.nspname AS f_table_schema,
+    c.relname AS f_table_name,
+    a.attname AS f_geography_column,
+    postgis_typmod_dims(a.atttypmod) AS coord_dimension,
+    postgis_typmod_srid(a.atttypmod) AS srid,
+    postgis_typmod_type(a.atttypmod) AS type
+   FROM pg_class c,
+    pg_attribute a,
+    pg_type t,
+    pg_namespace n
+  WHERE ((t.typname = 'geography'::name) AND (a.attisdropped = false) AND (a.atttypid = t.oid) AND (a.attrelid = c.oid) AND (c.relnamespace = n.oid) AND (c.relkind = ANY (ARRAY['r'::"char", 'v'::"char", 'm'::"char", 'f'::"char", 'p'::"char"])) AND (NOT pg_is_other_temp_schema(c.relnamespace)) AND has_table_privilege(c.oid, 'SELECT'::text))]]></view_script>
+			<column name="f_table_catalog" type="name" />
+			<column name="f_table_schema" type="name" />
+			<column name="f_table_name" type="name" />
+			<column name="f_geography_column" type="name" />
+			<column name="coord_dimension" type="integer" />
+			<column name="srid" type="integer" />
+			<column name="type" type="text" />
+		</view>
+		<view name="geometry_columns" >
+			<view_script><![CDATA[CREATE OR REPLACE VIEW ${nameWithSchemaName} AS SELECT (current_database())::character varying(256) AS f_table_catalog,
+    ${view} AS f_table_schema,
+    c.relname AS f_table_name,
+    a.attname AS f_geometry_column,
+    COALESCE(postgis_typmod_dims(a.atttypmod), sn.ndims, 2) AS coord_dimension,
+    COALESCE(NULLIF(postgis_typmod_srid(a.atttypmod), 0), sr.srid, 0) AS srid,
+    (replace(replace(COALESCE(NULLIF(upper(postgis_typmod_type(a.atttypmod)), 'GEOMETRY'::text), st.type, 'GEOMETRY'::text), 'ZM'::text, ''::text), 'Z'::text, ''::text))::character varying(30) AS type
+   FROM ((((((pg_class c
+     JOIN pg_attribute a ON (((a.attrelid = c.oid) AND (NOT a.attisdropped))))
+     JOIN pg_namespace n ON ((c.relnamespace = n.oid)))
+     JOIN pg_type t ON ((a.atttypid = t.oid)))
+     LEFT JOIN ( SELECT s.connamespace,
+            s.conrelid,
+            s.conkey,
+            replace(split_part(s.consrc, ''''::text, 2), ')'::text, ''::text) AS type
+           FROM ( SELECT pg_constraint.connamespace,
+                    pg_constraint.conrelid,
+                    pg_constraint.conkey,
+                    pg_get_constraintdef(pg_constraint.oid) AS consrc
+                   FROM pg_constraint) s
+          WHERE (s.consrc ~~* '%geometrytype(% = %'::text)) st ON (((st.connamespace = n.oid) AND (st.conrelid = c.oid) AND (a.attnum = ANY (st.conkey)))))
+     LEFT JOIN ( SELECT s.connamespace,
+            s.conrelid,
+            s.conkey,
+            (replace(split_part(s.consrc, ' = '::text, 2), ')'::text, ''::text))::integer AS ndims
+           FROM ( SELECT pg_constraint.connamespace,
+                    pg_constraint.conrelid,
+                    pg_constraint.conkey,
+                    pg_get_constraintdef(pg_constraint.oid) AS consrc
+                   FROM pg_constraint) s
+          WHERE (s.consrc ~~* '%ndims(% = %'::text)) sn ON (((sn.connamespace = n.oid) AND (sn.conrelid = c.oid) AND (a.attnum = ANY (sn.conkey)))))
+     LEFT JOIN ( SELECT s.connamespace,
+            s.conrelid,
+            s.conkey,
+            (replace(replace(split_part(s.consrc, ' = '::text, 2), ')'::text, ''::text), '('::text, ''::text))::integer AS srid
+           FROM ( SELECT pg_constraint.connamespace,
+                    pg_constraint.conrelid,
+                    pg_constraint.conkey,
+                    pg_get_constraintdef(pg_constraint.oid) AS consrc
+                   FROM pg_constraint) s
+          WHERE (s.consrc ~~* '%srid(% = %'::text)) sr ON (((sr.connamespace = n.oid) AND (sr.conrelid = c.oid) AND (a.attnum = ANY (sr.conkey)))))
+  WHERE ((c.relkind = ANY (ARRAY['r'::"char", 'v'::"char", 'm'::"char", 'f'::"char", 'p'::"char"])) AND (NOT (c.relname = 'raster_columns'::name)) AND (t.typname = 'geometry'::name) AND (NOT pg_is_other_temp_schema(c.relnamespace)) AND has_table_privilege(c.oid, 'SELECT'::text))
+ SELECT (current_database())::character varying(256) AS f_table_catalog,
+    n.nspname AS f_table_schema,
+    c.relname AS f_table_name,
+    a.attname AS f_geometry_column,
+    COALESCE(postgis_typmod_dims(a.atttypmod), sn.ndims, 2) AS coord_dimension,
+    COALESCE(NULLIF(postgis_typmod_srid(a.atttypmod), 0), sr.srid, 0) AS srid,
+    (replace(replace(COALESCE(NULLIF(upper(postgis_typmod_type(a.atttypmod)), 'GEOMETRY'::text), st.type, 'GEOMETRY'::text), 'ZM'::text, ''::text), 'Z'::text, ''::text))::character varying(30) AS type
+   FROM ((((((pg_class c
+     JOIN pg_attribute a ON (((a.attrelid = c.oid) AND (NOT a.attisdropped))))
+     JOIN pg_namespace n ON ((c.relnamespace = n.oid)))
+     JOIN pg_type t ON ((a.atttypid = t.oid)))
+     LEFT JOIN ( SELECT s.connamespace,
+            s.conrelid,
+            s.conkey,
+            replace(split_part(s.consrc, ''''::text, 2), ')'::text, ''::text) AS type
+           FROM ( SELECT pg_constraint.connamespace,
+                    pg_constraint.conrelid,
+                    pg_constraint.conkey,
+                    pg_get_constraintdef(pg_constraint.oid) AS consrc
+                   FROM pg_constraint) s
+          WHERE (s.consrc ~~* '%geometrytype(% = %'::text)) st ON (((st.connamespace = n.oid) AND (st.conrelid = c.oid) AND (a.attnum = ANY (st.conkey)))))
+     LEFT JOIN ( SELECT s.connamespace,
+            s.conrelid,
+            s.conkey,
+            (replace(split_part(s.consrc, ' = '::text, 2), ')'::text, ''::text))::integer AS ndims
+           FROM ( SELECT pg_constraint.connamespace,
+                    pg_constraint.conrelid,
+                    pg_constraint.conkey,
+                    pg_get_constraintdef(pg_constraint.oid) AS consrc
+                   FROM pg_constraint) s
+          WHERE (s.consrc ~~* '%ndims(% = %'::text)) sn ON (((sn.connamespace = n.oid) AND (sn.conrelid = c.oid) AND (a.attnum = ANY (sn.conkey)))))
+     LEFT JOIN ( SELECT s.connamespace,
+            s.conrelid,
+            s.conkey,
+            (replace(replace(split_part(s.consrc, ' = '::text, 2), ')'::text, ''::text), '('::text, ''::text))::integer AS srid
+           FROM ( SELECT pg_constraint.connamespace,
+                    pg_constraint.conrelid,
+                    pg_constraint.conkey,
+                    pg_get_constraintdef(pg_constraint.oid) AS consrc
+                   FROM pg_constraint) s
+          WHERE (s.consrc ~~* '%srid(% = %'::text)) sr ON (((sr.connamespace = n.oid) AND (sr.conrelid = c.oid) AND (a.attnum = ANY (sr.conkey)))))
+  WHERE ((c.relkind = ANY (ARRAY['r'::"char", 'v'::"char", 'm'::"char", 'f'::"char", 'p'::"char"])) AND (NOT (c.relname = 'raster_columns'::name)) AND (t.typname = 'geometry'::name) AND (NOT pg_is_other_temp_schema(c.relnamespace)) AND has_table_privilege(c.oid, 'SELECT'::text))]]></view_script>
+			<column name="f_table_catalog" type="varchar" />
+			<column name="f_table_schema" type="name" />
+			<column name="f_table_name" type="name" />
+			<column name="f_geometry_column" type="name" />
+			<column name="coord_dimension" type="integer" />
+			<column name="srid" type="integer" />
+			<column name="type" type="varchar" />
+		</view>
+		<sequence name="landmarks_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+		<sequence name="routes_id_seq" options="AS integer START WITH 1 INCREMENT BY 1" />
+		<rule name="geometry_columns_delete" id="Rule-e81" >
+			<string><![CDATA[CREATE RULE ${nameWithSchemaName} AS
+    ON DELETE TO public.geometry_columns DO INSTEAD NOTHING]]></string>
+		</rule>
+		<rule name="geometry_columns_insert" id="Rule-1770" >
+			<string><![CDATA[CREATE RULE ${nameWithSchemaName} AS
+    ON INSERT TO public.geometry_columns DO INSTEAD NOTHING]]></string>
+		</rule>
+		<rule name="geometry_columns_update" id="Rule-1f3c" >
+			<string><![CDATA[CREATE RULE ${nameWithSchemaName} AS
+    ON UPDATE TO public.geometry_columns DO INSTEAD NOTHING]]></string>
+		</rule>
+	</schema>
+	<layout name="Main Layout" id="Layout-2c4" show_relation="columns" >
+		<entity schema="public" name="landmarks" color="BED3F4" x="304" y="80" />
+		<entity schema="public" name="routes" color="BED3F4" x="48" y="80" />
+		<group name="travel_paths_hub" color="ECF0F7" >
+			<entity schema="public" name="landmarks" />
+			<entity schema="public" name="routes" />
+		</group>
+	</layout>
+	<layout name="~Layout with Sample Tools" id="Layout-1d6d" show_column_type="y" show_relation="columns" >
+		<entity schema="public" name="geography_columns" color="BED3F4" x="320" y="48" />
+		<entity schema="public" name="geometry_columns" color="BED3F4" x="608" y="48" />
+		<entity schema="public" name="landmarks" color="BED3F4" x="608" y="304" />
+		<entity schema="public" name="routes" color="BED3F4" x="320" y="304" />
+		<entity schema="public" name="spatial_ref_sys" color="BED3F4" x="48" y="304" />
+		<script name="SQL Editor" id="Editor-25" language="SQL" >
+			<string><![CDATA[SELECT
+	id, name, location, boundary
+FROM
+	"public".landmarks s;]]></string>
+		</script>
+		<browser id="Browse-92d" name="Relational Data Editor" confirm_updates="y" >
+			<browse_table schema="public" entity="landmarks" x="20" y="20" width="270" height="-60" />
+		</browser>
+		<query id="Query-1998" name="Query Builder" >
+			<query_table schema="public" name="landmarks" alias="l" x="48" y="48" >
+				<column name="id" />
+				<column name="name" />
+				<column name="location" />
+				<column name="boundary" />
+			</query_table>
+		</query>
+	</layout>
+</project>
